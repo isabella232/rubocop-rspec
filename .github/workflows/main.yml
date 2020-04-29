@@ -1,0 +1,58 @@
+name: CI
+
+on: push
+
+jobs:
+  confirm_config_and_documentation:
+    runs-on: ubuntu-latest
+    name: Confirm config and documentation
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.7
+      - run: bundle install
+      - run: bundle exec rake confirm_config documentation_syntax_check confirm_documentation
+
+  rspec:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ruby: ['2.4', '2.5', '2.6', '2.7', 'jruby']
+    name: RSpec, Ruby ${{ matrix.ruby }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "${{ matrix.ruby }}"
+      - run: bundle install
+      - run: bundle exec rake spec
+
+  rubocop:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ruby: ['2.4', '2.5', '2.6', '2.7', 'jruby']
+    name: RuboCop, Ruby ${{ matrix.ruby }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "${{ matrix.ruby }}"
+      - run: bundle install
+      - run: bundle exec rake internal_investigation
+
+  edge-rubocop:
+    runs-on: ubuntu-latest
+    name: RSpec and RuboCop with RuboCop master branch
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.7
+      - name: Use latest RuboCop from `master`
+        run: |
+          echo "gem 'rubocop', github: 'rubocop-hq/rubocop'" > Gemfile.local
+      - run: bundle install --no-cache
+      - run: bundle exec rake spec
+      - run: bundle exec rake internal_investigation
